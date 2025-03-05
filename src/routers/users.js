@@ -4,6 +4,7 @@ const auth = require("../middleware/auth");
 const User = require("../models/user");
 const sharp = require("sharp");
 const multer = require("multer");
+const { sendWelcomeEmail, sendFinalEmail } = require("../emails/account");
 const upload = multer({
   limits: {
     fileSize: 1000000,
@@ -19,6 +20,7 @@ const upload = multer({
 router.post("/users", async (req, res) => {
   const user = new User(req.body);
   try {
+    await sendWelcomeEmail(user.name, user.email);
     const token = await user.generateAuthToken();
     await user.save();
     res.status(201).send({ user, token });
@@ -90,6 +92,7 @@ router.patch("/users/me", auth, async (req, res) => {
 
 router.delete("/users/me", auth, async (req, res) => {
   try {
+    sendFinalEmail(req.user.name, req.user.email);
     await req.user.deleteOne();
     res.send(req.user);
   } catch (e) {
